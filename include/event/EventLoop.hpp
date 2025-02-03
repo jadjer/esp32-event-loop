@@ -8,25 +8,54 @@
 #include <cstdint>
 #include <esp_event.h>
 #include <functional>
+#include <unordered_map>
+#include <vector>
 
+/**
+ * @namespace event
+ */
 namespace event {
 
 using EventType = std::int32_t;
-using EventGroup = esp_event_base_t;
 using EventHandler = std::function<void(std::any const &)>;
+using EventHandlers = std::vector<EventHandler>;
 
-auto const EVENT_GROUP_DEFAULT = "EVENT_BASE";
-
+/**
+ * @class EventLoop
+ */
 class EventLoop {
 public:
   EventLoop();
   ~EventLoop();
 
 public:
-  void subscribe(EventType eventType, EventHandler handler, EventGroup eventGroup = EVENT_GROUP_DEFAULT);
+  /**
+   * Subscribe on event
+   * @param eventType Event type
+   * @param handler Event handler
+   */
+  void subscribe(EventType eventType, EventHandler const &handler);
 
 public:
-  void post(EventType eventType, std::any const &data = nullptr, EventGroup eventGroup = EVENT_GROUP_DEFAULT);
+  /**
+   * Send event (without any data)
+   * @param eventType Event type
+   */
+  void post(EventType eventType);
+  /**
+   * Send event (with raw data)
+   * @param eventType Event type
+   * @param data Pointer on data
+   * @param dataSize Data size
+   */
+  void post(EventType eventType, void const *data, std::size_t dataSize);
+
+  /**
+   * Send event (with any data)
+   * @param eventType Event type
+   * @param value Data value
+   */
+  void post(EventType eventType, std::any const &value);
 
 private:
   static void eventHandler(void *handlerArgs, esp_event_base_t eventBase, EventType eventType, void *eventData);
@@ -35,7 +64,7 @@ private:
   esp_event_loop_handle_t m_eventLoop = nullptr;
 
 private:
-  std::unordered_map<EventType, EventHandler> m_handlers;
+  std::unordered_map<EventType, EventHandlers> m_handlers;
 };
 
 }// namespace event
